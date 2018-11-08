@@ -3,6 +3,8 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+// 导入公共样式
+import '@/assets/common.css'
 // 引入并使用element ui
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'

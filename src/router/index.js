@@ -1,10 +1,12 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import Login from '@/components/Login.vue'
-
+// 导入登录组件
+import Home from '@/components/Home.vue'
+// 导入home组件
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   routes: [
     {
       path: '/',
@@ -13,6 +15,28 @@ export default new Router({
     {
       path: '/login',
       component: Login
+    },
+    {
+      path: '/home',
+      component: Home
     }
   ]
 })
+// 给路由设置守卫
+// from 从哪里来
+// to 到哪里去
+// next()代表放行 next(false) next('/home')
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  // 获取token
+  console.log(to.path)
+  if (to.path === '/login' || token) {
+    // 如果token或者去login页的话就放行
+    next()
+    // 满足条件放行
+  } else {
+    next('/login')
+    // 不然就重回登录页登录
+  }
+})
+export default router
