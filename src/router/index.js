@@ -4,6 +4,8 @@ import Login from '@/components/Login.vue'
 // 导入登录组件
 import Home from '@/components/Home.vue'
 // 导入home组件
+import Users from '@/components/Users.vue'
+// 导入用户组件
 Vue.use(Router)
 
 const router = new Router({
@@ -18,7 +20,15 @@ const router = new Router({
     },
     {
       path: '/home',
-      component: Home
+      component: Home,
+      // 组件嵌套：1.通过children属性在父组件中添加子组件
+      //          2.给子组件设置出口
+      children: [
+        {
+          path: '/users',
+          component: Users
+        }
+      ]
     }
   ]
 })
