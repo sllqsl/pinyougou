@@ -39,14 +39,15 @@
          <el-switch
           v-model="scope.row.mg_state"
           active-color="#13ce66"
-          inactive-color="#ff4949">
+          inactive-color="#ff4949"
+          @change="changeState(scope.row)">
         </el-switch>
       </template>
     </el-table-column>
     <el-table-column 
       label="操作">
       <template slot-scope="scope">
-         <el-button type="primary" icon="el-icon-edit" plain size="small"></el-button>
+         <el-button type="primary" icon="el-icon-edit" plain size="small" @click="showEdit(scope.row)"></el-button>
          <el-button type="danger" icon="el-icon-delete" plain size="small" @click="del(scope.row.id)"></el-button>
          <el-button type="success" icon="el-icon-check" plain size="small">分配角色</el-button>
       </template>
@@ -62,37 +63,70 @@
       :page-sizes="[2, 4, 6, 8]"
       :total="total"
       :page-size="pageSize"
+      @size-change="handleSizeChange"
       @current-change="handlePageChage"
       >
      </el-pagination>
     <!-- 添加用户弹出框 -->
-    <el-dialog title="添加地址" :visible.sync="addUsers">
+    <el-dialog title="添加用户" :visible.sync="addUsers">
+      <!-- 数据分析
+       v-model="addFrom"获取整个表单中全部的数据 
+       ref="addForm" 获整个dome元素
+       :rlues="rlues"表单验证-->
       <el-form
-      label-position="right"
-      label-width="80px">
-        <el-form-item label="用户名称">
-          <el-input autocomplete="off"></el-input>
+      label-width="80px"
+      :model="addForm"
+      ref="addForm"
+      :rules="rules"
+      status-icon>
+        <el-form-item label="用户名称" prop="username">
+          <el-input v-model="addForm.username" placeholder="请输入用户名"></el-input>
         </el-form-item>
-          <el-form-item label="密码">
-          <el-input autocomplete="off"></el-input>
+          <el-form-item label="密码" prop="password">
+          <el-input placeholder="请输入密码" v-model="addForm.password"></el-input>
         </el-form-item>
-         <el-form-item label="邮箱">
-          <el-input autocomplete="off"></el-input>
+         <el-form-item label="邮箱" prop="email">
+          <el-input placeholder="请输入邮箱" v-model="addForm.email"></el-input>
         </el-form-item>
-         <el-form-item label="地址">
-          <el-input autocomplete="off"></el-input>
+         <el-form-item label="电话" prop="mobile">
+          <el-input placeholder="电话" v-model="addForm.mobile"></el-input>
         </el-form-item>  
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="addUsers = false">取 消</el-button>
-        <el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+        <el-button type="primary" @click="addUserss">确 定</el-button>
+      </div>
+   </el-dialog>
+    <!-- 用户编辑弹出框 -->
+     <el-dialog title="修改用户" :visible.sync="editUsers">
+      <!-- 数据分析
+       v-model="addFrom"获取整个表单中全部的数据 
+       ref="addForm" 获整个dome元素
+       :rlues="rlues"表单验证-->
+      <el-form
+      label-width="80px"
+      :model="editForm"
+      ref="editForm"
+      :rules="rules"
+      status-icon>
+        <el-form-item label="用户名称">
+          <el-tag type="info">{{editForm.username}}</el-tag>
+        </el-form-item>
+         <el-form-item label="邮箱" prop="email">
+          <el-input placeholder="请输入邮箱" v-model="editForm.email"></el-input>
+        </el-form-item>
+         <el-form-item label="电话" prop="mobile">
+          <el-input placeholder="电话" v-model="editForm.mobile"></el-input>
+        </el-form-item>  
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="editUsers = false">取 消</el-button>
+        <el-button type="primary" @click="editUserss">确 定</el-button>
       </div>
    </el-dialog>
   </div>
 </template>
 <script>
-// 引入axios
-import axios from 'axios'
 export default {
   data() {
     return {
@@ -107,7 +141,44 @@ export default {
       // 总页数
       total: 0,
       // 添加用户模态框属性值
-      addUsers: false
+      addUsers: false,
+      // 添加用户的数据存储
+      addForm: {
+        username: '',
+        password: '',
+        email: '',
+        mobile: ''
+      },
+      // 添加编辑用户模态框属性
+      editUsers: false,
+      // 变价用户的数据存储
+      editForm: {
+        id: '',
+        email: '',
+        username: '',
+        mobile: ''
+      },
+      // 表单验证开始
+      rules: {
+        username: [
+          { required: true, message: '请输入用户名', trigger: 'blur' },
+          { min: 3, max: 9, message: '长度在 3 到 9 个字符', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 12, message: '长度在 6 到 12 个字符', trigger: 'blur' }
+        ],
+        email: [
+          { type: 'email', message: '请输入正确格式的邮箱', trigger: 'blur' }
+        ],
+        mobile: [
+          {
+            pattern: /^1\d{10}$/,
+            message: '请输入正确的手机号',
+            trigger: 'blur'
+          }
+        ]
+      }
     }
   },
   created() {
@@ -116,34 +187,38 @@ export default {
   methods: {
     // 页面改变事件
     handlePageChage(val) {
-      // console.log(val)
+      console.log(val)
       // 改变当前页
       this.currentPage = val
       // 再次渲染
       this.getAxios()
     },
+    // 每页条数发送变化的时候
+    handleSizeChange(val) {
+      this.currentPage = 1
+      this.pageSize = val
+      this.getAxios()
+    },
     // 封装
     getAxios() {
       // 封装axios发送获取数据并且渲染
-      axios({
-        url: 'http://localhost:8888/api/private/v1/users',
+      this.axios({
+        url: 'users',
         method: 'get',
         params: {
           query: this.query,
           pagenum: this.currentPage,
           pagesize: this.pageSize
-        },
-        // 注意发送axios时要加一请求头，加上token
-        headers: {
-          Authorization: localStorage.getItem('token')
         }
       }).then(res => {
-        console.log(res.data)
-        if (res.data.meta.status === 200) {
+        // console.log(res)
+        let { meta: { status }, data: { users, total } } = res
+        // console.log(users, total)
+        if (status === 200) {
           // 此时的usersList应该为返回值
-          this.usersList = res.data.data.users
+          this.usersList = users
           // 更新total
-          this.total = res.data.data.total
+          this.total = total
         }
       })
     },
@@ -153,6 +228,7 @@ export default {
       // 注意这里的query是双向数据绑定，所以直接发送请求渲染就行
       this.getAxios()
     },
+    // 删除用户
     del(id) {
       // 点击删除弹出模态框
       this.$confirm('你确定要删除用户吗?', '温馨提示', {
@@ -162,17 +238,15 @@ export default {
       })
         .then(() => {
           // 按下确认键以后
-          axios({
-            url: `http://localhost:8888/api/private/v1/users/${id}`,
-            method: 'delete',
-            // 注意发送axios时要加一请求头，加上token
-            headers: {
-              Authorization: localStorage.getItem('token')
-            }
+          this.axios({
+            url: `users/${id}`,
+            method: 'delete'
           }).then(res => {
-            if (res.data.meta.status === 200) {
-              console.log(res.data.meta.status)
-              if (this.usersList.length === 0 && this.currentPage > 1) {
+            let { meta: { status } } = res
+            // console.log(res)
+            if (status === 200) {
+              // console.log(res.data.meta.status)
+              if (this.usersList.length === 1 && this.currentPage > 1) {
                 this.currentPage--
               }
               // 弹出成功删除的信息
@@ -185,6 +259,92 @@ export default {
         .catch(() => {
           this.$message.error('取消删除')
         })
+    },
+    // 改变状态
+    changeState({ id, mg_state }) {
+      // 解构赋值，直接获取其中的参数
+      this.axios({
+        url: `users/${id}/state/${mg_state}`,
+        method: 'put'
+      }).then(res => {
+        // console.log(res)
+        let { meta: { status } } = res
+        if (status === 200) {
+          this.$message.success('用户状态改变成功')
+        } else {
+          this.$message.error('用户状态改变失败')
+        }
+      })
+    },
+    // 添加用户
+    addUserss() {
+      this.$refs.addForm.validate(vaild => {
+        // 如果校验不成功直接跳出
+        if (!vaild) return false
+        // 如果成功的话发送ajax请求
+        this.axios({
+          url: 'users',
+          method: 'post',
+          data: this.addForm
+        }).then(res => {
+          // console.log(res)
+          // let { meta: { status } } = res
+          // console.log(meta)
+          let { meta: { status } } = res
+          if (status === 201) {
+            // 添加成功后应该渲染最后一页
+            this.total++
+            this.currentPage = Math.ceil(this.total / this.pageSize)
+            this.getAxios()
+            // 添加成功信息
+            this.$message.success('添加用户成功')
+            // 清空并且关闭对话框
+            this.$refs.addForm.resetFields()
+            this.addUsers = false
+          }
+        })
+      })
+    },
+    // 显示编辑用户对话框
+    showEdit(user) {
+      console.log(user)
+      this.editUsers = true
+      // 改变属性，显示模态框
+      this.editForm.username = user.username
+      // 分别显示姓名、邮箱和电话
+      this.editForm.mobile = user.mobile
+      this.editForm.email = user.email
+      // 注意这里虽然看不见但是要把id也要传进去，后面要用
+      this.editForm.id = user.id
+    },
+    // 编辑用户
+    editUserss() {
+      // console.log('aha')
+      this.$refs.editForm.validate(vaild => {
+        if (!vaild) return false
+        console.log(vaild)
+        // 如果验证不通过直接返回
+        this.axios({
+          url: `users/${this.editForm.id}`,
+          method: 'put',
+          data: this.editForm
+        }).then(res => {
+          let { meta: { status } } = res
+          // console.log(res)
+          if (status === 200) {
+            // 提示更新成功
+            this.$message.success('更新用户信息成功')
+            // 表单重置
+            this.$refs.editForm.resetFields()
+            // 对话框关闭
+            this.editUsers = false
+            // 重新渲染
+            this.getAxios()
+          } else {
+            this.$message.error('更新失败')
+          }
+        })
+      })
     }
   }
 }

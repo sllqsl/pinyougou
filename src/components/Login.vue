@@ -7,7 +7,7 @@
       <el-form-item label="用户名" prop="username">
         <el-input v-model="form.username" placeholder="请输入用户名"></el-input>
       </el-form-item>
-       <el-form-item label="密  码" prop="password">
+       <el-form-item label="密  码" prop="password" @keyup.enter.native="login">
         <el-input v-model="form.password" placeholder="请输入密码" type="password"></el-input>
       </el-form-item>
       <el-form-item>
@@ -62,12 +62,13 @@ export default {
             // 这个用箭头函数保证this指向vm
           }).then(res => {
             // console.log(res)
-            if (res.data.meta.status == 200) {
+            let { meta: { status } } = res
+            if (status == 200) {
               console.log('登录成功')
               // 输出登录成功
               this.$message.success('用户登录成功') //消息提示组价固定语法
               // 存储token，进行登录拦截
-              localStorage.setItem('token', res.data.data.token)
+              localStorage.setItem('token', res.data.token)
               // 通过路由跳转到home组件
               this.$router.push('/home')
             } else {
