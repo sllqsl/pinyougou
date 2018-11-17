@@ -12,6 +12,20 @@ import '@/assets/common.css'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import axios from 'axios'
+// 导入element-tree-grid插件
+import ElTreeGrid from 'element-tree-grid'
+// 定义这个插件作为全局组件
+import VueQuillEditor from 'vue-quill-editor'
+// 引入富文本编辑器
+// 导入相关的样式
+import 'quill/dist/quill.core.css'
+import 'quill/dist/quill.snow.css'
+import 'quill/dist/quill.bubble.css'
+// 注册富文本编辑器插件
+Vue.use(VueQuillEditor)
+Vue.component(ElTreeGrid.name, ElTreeGrid)
+// 也可以写成Vue.component(element-tree-grid, ElTreeGrid)
+
 Vue.config.productionTip = false
 
 Vue.use(ElementUI) // 引入element,需要三步

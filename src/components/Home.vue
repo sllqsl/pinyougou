@@ -20,37 +20,24 @@
            unique-opened：只能打开一个
            router：开启路由模式，当点击的时候发送路由跳转，跳转到对应的组件-->
         <el-menu
-          default-active="1"
+          :default-active="$route.path.slice(1).split('-')[0]"
           class="el-menu-vertical-demo"
           background-color="#545c64"
           text-color="#fff"
           active-text-color="#ffd04b"
           unique-opened
           router>
-          <el-submenu index="1">
+          <el-submenu :index="menus.path" v-for="menus in menusList" :key="menus.id">
             <template slot="title">
               <i class="el-icon-location"></i>
-              <span>用户管理</span>
+              <span>{{menus.authName}}</span>
             </template>
-            <el-menu-item index="/users">
+            <el-menu-item :index="item.path" v-for="item in menus.children" :key="item.id">
                 <i class="el-icon-menu"></i>
-                <span slot="title">用户列表</span>
+                <span slot="title">{{item.authName}}</span>
             </el-menu-item>
             </el-submenu>
-            <el-submenu index="2">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>权限管理</span>
-            </template>
-            <el-menu-item index="2.1">
-                <i class="el-icon-menu"></i>
-                <span slot="title">角色列表</span>
-            </el-menu-item>
-            <el-menu-item index="2.2">
-                <i class="el-icon-menu"></i>
-                <span slot="title">权限列表</span>
-            </el-menu-item>
-          </el-submenu>
+       
         </el-menu>
    
         </el-aside>
@@ -64,6 +51,11 @@
 
 <script>
 export default {
+  data() {
+    return {
+      menusList: ''
+    }
+  },
   // 退出登录的事件
   methods: {
     // 退出事件
@@ -84,6 +76,15 @@ export default {
         .catch(() => {
           this.$message.error('取消退出')
         })
+    }
+  },
+  // 钩子函数
+  async created() {
+    let res = await this.axios.get('menus')
+    console.log(res)
+    let { data, meta: { status } } = res
+    if (status === 200) {
+      this.menusList = data
     }
   }
 }

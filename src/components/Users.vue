@@ -49,7 +49,7 @@
       <template slot-scope="scope">
          <el-button type="primary" icon="el-icon-edit" plain size="small" @click="showEdit(scope.row)"></el-button>
          <el-button type="danger" icon="el-icon-delete" plain size="small" @click="del(scope.row.id)"></el-button>
-         <el-button type="success" icon="el-icon-check" plain size="small">分配角色</el-button>
+         <el-button type="success" icon="el-icon-check" plain size="small" @click="showAssignDialog(scope.row)">分配角色</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -124,6 +124,28 @@
         <el-button type="primary" @click="editUserss">确 定</el-button>
       </div>
    </el-dialog>
+   <!-- 弹出框 -->
+   <el-dialog title="分配角色" :visible.sync="AssignRolesDialog">
+  <el-form :model="assginform" ref="assignForm" :rules="rules">
+    <el-form-item label="用户名称" label-width="80px" prop="username">
+     <el-tag type="info">{{assginform.username}}</el-tag>
+    </el-form-item>
+    <el-form-item label="角色列表" label-width="80px" prop="rid">
+      <el-select v-model="assginform.rid" placeholder="请选择活动区域">
+       <el-option
+       v-for="item in RoleList" :key="item.id"
+       :label="item.roleName"
+       :value="item.id">
+
+       </el-option>
+      </el-select>
+    </el-form-item>
+  </el-form>
+  <div slot="footer" class="dialog-footer">
+    <el-button @click="AssignRolesDialog = false">取 消</el-button>
+    <el-button type="primary" @click="assignRole">确 定</el-button>
+  </div>
+</el-dialog>
   </div>
 </template>
 <script>
@@ -177,14 +199,30 @@ export default {
             message: '请输入正确的手机号',
             trigger: 'blur'
           }
-        ]
-      }
+        ],
+        rid: [{ required: true, message: '请选择角色', trigger: 'blur' }]
+      },
+      AssignRolesDialog: false,
+      assginform: {
+        id: '',
+        username: '',
+        rid: ''
+      },
+      RoleList: []
     }
   },
   created() {
     this.getAxios()
   },
   methods: {
+    // 获取所以角色信息
+    async getRoleList() {
+      let res = await this.axios.get('roles')
+      let { data, meta: { status } } = res
+      if (status === 200) {
+        this.RoleList = data
+      }
+    },
     // 页面改变事件
     handlePageChage(val) {
       console.log(val)
@@ -238,23 +276,24 @@ export default {
       })
         .then(() => {
           // 按下确认键以后
-          this.axios({
+          return this.axios({
             url: `users/${id}`,
             method: 'delete'
-          }).then(res => {
-            let { meta: { status } } = res
-            // console.log(res)
-            if (status === 200) {
-              // console.log(res.data.meta.status)
-              if (this.usersList.length === 1 && this.currentPage > 1) {
-                this.currentPage--
-              }
-              // 弹出成功删除的信息
-              this.$message.success('删除用户成功')
-              // 渲染当前页
-              this.getAxios()
-            }
           })
+        })
+        .then(res => {
+          let { meta: { status } } = res
+          // console.log(res)
+          if (status === 200) {
+            // console.log(res.data.meta.status)
+            if (this.usersList.length === 1 && this.currentPage > 1) {
+              this.currentPage--
+            }
+            // 弹出成功删除的信息
+            this.$message.success('删除用户成功')
+            // 渲染当前页
+            this.getAxios()
+          }
         })
         .catch(() => {
           this.$message.error('取消删除')
@@ -344,6 +383,44 @@ export default {
             this.$message.error('更新失败')
           }
         })
+      })
+    },
+    // 点击显示对话框
+    async showAssignDialog(role) {
+      // console.log(role)
+      this.AssignRolesDialog = true
+      this.assginform.username = role.username
+      this.assginform.id = role.id
+      // console.log(role.id)
+      let res = await this.axios.get(`users/${role.id}`)
+      // console.log(res)
+      // 通过role.id获取rid
+      let { data: { rid }, meta: { status } } = res
+      if (status === 200) {
+        if (rid === -1) {
+          rid = ''
+        }
+        this.assginform.rid = rid
+      }
+      this.getRoleList()
+    },
+    // 点击确定发送ajax请求
+    assignRole() {
+      // 首先进行表单验证
+      this.$refs.assignForm.validate(async vaild => {
+        if (!vaild) return false
+        let { id, rid } = this.assginform
+        let res = await this.axios.put(`users/${id}/role`, {
+          rid
+        })
+        // console.log(res)
+        let { data, meta: { status } } = res
+        if (status === 200) {
+          this.AssignRolesDialog = false
+          this.$message.success('权限更新成功')
+          this.getAxios()
+          this.$refs.assignForm.resetFields()
+        }
       })
     }
   }
